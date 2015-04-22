@@ -1,16 +1,32 @@
-Welcome to StackEdit!
+Applicatives vs Monads!
 ===================
 
-
-Hey! I'm your first Markdown document in **StackEdit**[^stackedit]. Don't delete me, I'm very helpful! I can be recovered anyway in the **Utils** tab of the <i class="icon-cog"></i> **Settings** dialog.
-
-----------
+Hey! This is not an introductory article on either [**Applicatives**](http://learnyouahaskell.com/functors-applicative-functors-and-monoids#applicative-functors) or [**Monads**](http://learnyouahaskell.com/a-fistful-of-monads). Below text requires some understanding of both Applicatives and Monads. Although all of the examples in this text are in Haskell, I will soon publish Scala version too.
 
 
-Documents
--------------
 
-StackEdit stores your documents in your browser, which means all your documents are automatically saved locally and are accessible **offline!**
+Choosing from computations
+----------------------------------
+ Let's take a look at Monad and Applicative typeclasses:
+
+```Haskell
+class Functor f => Applicative f where
+    pure :: a -> f a
+    (<*>) :: f (a -> b) -> f a -> f b
+    (*>) :: f a -> f b -> f b
+    (<*) :: f a -> f b -> f a
+```
+```Haskell
+ class Applicative m => Monad m where
+   return :: a -> m a
+   (>>=)  :: m a -> (a -> m b) -> m b
+   (>>)   :: m a -> m b -> m b
+```
+
+By looking at `Monad` and `Applicative` classes, it's clear that every monad is an applicative([AMP proposal](https://wiki.haskell.org/Functor-Applicative-Monad_Proposal)). In other words, Applicative is super class of monad. Among others, the most interesting function in applicative xis `(<*>)` whereas in monad I see `(>>=)` as an interesting beast. `return` and `pure` are same, they just lift a value to minimal possible context.  
+The purpose of this text is to understand the key differences between Applicative and Monad typeclasses. One appropriate example to understand the difference is disjoint union type. We usually denote it by using Either type.
+
+So let's have a stab at `bind`. `bind`'s signature indicates that it composes a function of type `a -> m b` with the computation `m a`. 
 
 > **Note:**
 
