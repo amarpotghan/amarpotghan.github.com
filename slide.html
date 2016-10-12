@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="Amar Potghan" />
+  <meta name="dcterms.date" content="2016-10-11" />
+  <title>Composable folds</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="reveal.js/css/reveal.css"/>
+    <style type="text/css">code{white-space: pre;}</style>
+    <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    </style>
+    <link rel="stylesheet" href="reveal.js/css/theme/simple.css" id="theme">
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'reveal.js/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+    <!--[if lt IE 9]>
+    <script src="reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+<section>
+    <h3 class="title">Composable folds</h3>
+    <h2 class="author">Amar Potghan</h2>
+    <h3 class="date">2016-10-11</h3>
+</section>
+<section id="about-me" class="slide level2">
+<h3>About me</h3>
+<ul>
+<li class="fragment">Developer in Capital Match</li>
+<li class="fragment">Functional programming during the day, functional programming at the night</li>
+<li class="fragment">Mostly Haskell and Scala.</li>
+</ul>
+</section>
+<section id="fold" class="slide level2">
+<h3>Fold</h3>
+<p><em>&quot;In functional programming, fold (or reduce) is a family of higher order functions that process a data structure in some order and build a return value&quot;</em></p>
+</section>
+<section id="type-of-left-fold" class="slide level2">
+<h3>Type of left fold</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+ <span class="kw">def</span> foldl[A, B](as: List[A], b: B)(f: (B, A) =&gt; B): B</code></pre></div>
+</section>
+<section id="examples" class="slide level2">
+<h3>Examples</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+
+scala&gt; <span class="fu">foldl</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), <span class="dv">0</span>)(_ + _)
+res0: Int = <span class="dv">6</span>
+
+scala&gt; <span class="fu">foldl</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), <span class="dv">0</span>)((x, y) =&gt; x + <span class="dv">1</span>)
+res1: Int = <span class="dv">3</span></code></pre></div>
+<p><em>Sum and Length of the List</em></p>
+</section>
+<section id="example-combining-multiple-folds" class="slide level2">
+<h3>Example: Combining multiple folds</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+scala&gt; <span class="fu">foldl</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), <span class="dv">0</span>)(_ + _)
+res0: Int = <span class="dv">6</span>
+
+scala&gt; <span class="fu">foldl</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), <span class="dv">0</span>)((x, y) =&gt; x + <span class="dv">1</span>)
+res1: Int = <span class="dv">3</span>
+
+scala&gt; res0 / res1</code></pre></div>
+<p><em>Calculating mean requires two traversals over the list, one for sum and other for length. It's negligible for smaller lists but not for larger lists</em></p>
+</section>
+<section id="imperative-solution-ugly" class="slide level2">
+<h3>Imperative Solution: Ugly!</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+<span class="kw">var</span> sum = <span class="dv">0</span>
+<span class="kw">var</span> length = <span class="dv">0</span>
+
+<span class="kw">val</span> ls = List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>)
+
+<span class="kw">for</span>(l &lt;- ls) {
+  sum = sum + l
+  length = length + <span class="dv">1</span>
+}
+
+<span class="kw">val</span> mean = sum / length
+
+<span class="fu">println</span>(mean)</code></pre></div>
+<p><em>We all agree that's not the solution. It's just ugly</em></p>
+</section>
+<section id="functional-but-arguably-ugly-solution" class="slide level2">
+<h3>Functional but arguably ugly solution</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+<span class="kw">def</span> <span class="fu">divide</span>(x: (Int, Int)): Int = x.<span class="fu">_1</span> / x.<span class="fu">_2</span>
+
+<span class="fu">divide</span>(<span class="fu">foldl</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), (<span class="dv">0</span>, <span class="dv">0</span>)){(x, y) =&gt; x <span class="kw">match</span> {
+  <span class="kw">case</span> (summ, lengthh) =&gt; (summ + y, lengthh + <span class="dv">1</span>)
+}})</code></pre></div>
+<p><em>We build up a pair constituting sum and length in fold. Although this solution works, it's not composable.</em></p>
+</section>
+<section id="put-your-functional-goggles-on" class="slide level2">
+<h3>Put your functional goggles on</h3>
+<figure>
+<img src="img/functional.goggles.jpg" />
+</figure>
+<p><em>Image courtesy: Rahul Phulore</em></p>
+</section>
+<section id="dissecting-ugly-functional-solution" class="slide level2">
+<h3>Dissecting ugly functional solution</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+postprocess                 initial   folding function
+|                             |            |
+<span class="fu">divide</span>(<span class="fu">foldl</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), (<span class="dv">0</span>, <span class="dv">0</span>)){(x, y) =&gt; x <span class="kw">match</span> {
+  <span class="kw">case</span> (summ, lengthh) =&gt; (summ + y, lengthh + <span class="dv">1</span>)
+}})</code></pre></div>
+</section>
+<section id="capture-fold-in-a-type-preserve-info-in-type" class="slide level2">
+<h3>Capture fold in a type, preserve info in type</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+postprocess                 initial   folding function
+|                             |            |
+<span class="fu">divide</span>(<span class="fu">foldl</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), (<span class="dv">0</span>, <span class="dv">0</span>)){(x, y) =&gt; x <span class="kw">match</span> {
+  <span class="kw">case</span> (summ, lengthh) =&gt; (summ + y, lengthh + <span class="dv">1</span>)
+}})</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+<span class="kw">trait</span> Foldl[B, A] { self =&gt;
+  <span class="kw">import</span> Foldl.<span class="fu">_</span>
+
+  <span class="kw">type</span> S
+  <span class="kw">def</span> initial: S
+  <span class="kw">def</span> <span class="fu">foldingFunction</span>(s: S, b: B): S
+  <span class="kw">def</span> <span class="fu">postProcessor</span>(s: S): A
+
+  <span class="kw">def</span> <span class="fu">of</span>(bs: List[B]): A = {
+   <span class="fu">postProcessor</span>(<span class="fu">foldl</span>(bs, initial)(foldingFunction))
+  }
+}
+
+<span class="kw">object</span> Foldl {
+ <span class="kw">def</span> create[X, Z](seed: Z)(f: (Z, X) =&gt; Z): Z = <span class="kw">new</span> Foldl {
+   <span class="kw">type</span> S = Z
+   <span class="kw">def</span> initial = seed
+   <span class="kw">def</span> foldingFunction = f
+   <span class="kw">def</span> <span class="fu">postProcessor</span>(z: Z) = z
+ }
+ <span class="kw">def</span> createNewFold[X, Y, Z](seed: Z)(f: (X, Z) =&gt; Z, post: Z =&gt; Y): Y = {
+ ...
+ }</code></pre></div>
+<p><em>Note that we don't need to see S from outside</em></p>
+</section>
+<section id="so-far-so-good" class="slide level2">
+<h3>So far so good</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+scala&gt; <span class="kw">val</span> sum = <span class="fu">create</span>(<span class="dv">0</span>)(_ + _)
+
+scala&gt; :t sum
+Foldl[Int, Int]
+
+scala&gt; <span class="kw">val</span> length = <span class="fu">create</span>(<span class="dv">0</span>)((x, y) =&gt; x + <span class="dv">1</span>)
+
+scala&gt; :t length
+Foldl[Int, Int]
+
+scala&gt; sum.<span class="fu">of</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>))
+res0: Int = <span class="dv">6</span>
+
+scala&gt; length.<span class="fu">of</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>))
+res1: Int = <span class="dv">3</span></code></pre></div>
+</section>
+<section id="foldl-type-functor" class="slide level2">
+<h3>Foldl type: Functor</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+<span class="kw">trait</span> Foldl[B, A] { self =&gt;
+ <span class="kw">import</span> Foldl.<span class="fu">_</span>
+
+  <span class="kw">type</span> S
+  <span class="kw">def</span> initial: S
+  <span class="kw">def</span> <span class="fu">foldingFunction</span>(s: S, b: B): S
+  <span class="kw">def</span> <span class="fu">postProcessor</span>(s: S): A
+
+  <span class="kw">def</span> map[C](g: A =&gt; C): Foldl[B, C] = {
+    <span class="fu">createNewFold</span>(initial)(foldingFunction, g compose postProcessor)
+  }
+
+  <span class="kw">def</span> <span class="fu">of</span>(bs: List[B]): A = {
+    <span class="fu">postProcessor</span>(<span class="fu">foldl</span>(bs, initial)(foldingFunction))
+  }
+}
+
+...</code></pre></div>
+<p><em>Foldl can be mapped over</em></p>
+</section>
+<section id="example-foldl-functor" class="slide level2">
+<h3>Example: Foldl Functor</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+scala&gt; <span class="kw">val</span> sum = <span class="fu">create</span>(<span class="dv">0</span>)(_ + _)
+
+scala&gt; :t sum
+Foldl[Int, Int]
+
+scala&gt; <span class="kw">val</span> sumWithCaption = sum.<span class="fu">map</span>(x =&gt; <span class="st">&quot;Sum of the given list is: &quot;</span> ++ x.<span class="fu">toString</span>)
+
+scala&gt; :t sumWithCaption
+Foldl[Int, String]
+
+scala&gt; sumWithCaption.<span class="fu">of</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>))
+res0: String = Sum of the given list is: <span class="dv">6</span></code></pre></div>
+</section>
+<section id="composing-folds" class="slide level2">
+<h3>Composing folds</h3>
+<p>Finally :)</p>
+</section>
+<section id="composing-folds-1" class="slide level2">
+<h3>Composing folds:</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+<span class="kw">trait</span> Foldl[B, A] { self =&gt;
+  <span class="kw">import</span> Foldl.<span class="fu">_</span>
+
+  <span class="kw">type</span> S
+  <span class="kw">def</span> initial: S
+  <span class="kw">def</span> <span class="fu">foldingFunction</span>(s: S, b: B): S
+  <span class="kw">def</span> <span class="fu">postProcessor</span>(s: S): A
+
+  <span class="kw">def</span> map[C](g: A =&gt; C): Foldl[B, C] = {
+    <span class="fu">createNewFold</span>(initial)(foldingFunction, g compose postProcessor)
+  }
+
+  <span class="kw">def</span> apply[C](other: Foldl[B, A =&gt; C]): Foldl[B, C] = {
+    <span class="kw">def</span> seed = (other.<span class="fu">initial</span>, self.<span class="fu">inital</span>)
+    <span class="kw">def</span> <span class="fu">step</span>(acc: (other.<span class="fu">S</span>, self.<span class="fu">S</span>), b: B) = (other.<span class="fu">foldingFunction</span>(acc.<span class="fu">_1</span>, b), self.<span class="fu">foldingFunction</span>(acc.<span class="fu">_2</span>, b))
+    <span class="kw">def</span> <span class="fu">post</span>(s: (other.<span class="fu">S</span>, self.<span class="fu">S</span>)) = other.<span class="fu">postProcessor</span>(s)(self.<span class="fu">postProcessor</span>(s))
+    <span class="fu">createNewFold</span>(seed)(step, post)
+  }
+
+  <span class="kw">def</span> &lt;*&gt;[C](other: Foldl[B, A =&gt; C]): Foldl[B, C] = <span class="fu">apply</span>(other)
+
+  <span class="kw">def</span> <span class="fu">of</span>(bs: List[B]): A = {
+    <span class="fu">postProcessor</span>(<span class="fu">foldl</span>(bs, initial)(foldingFunction))
+  }
+}
+
+<span class="kw">object</span> Foldl {
+
+...
+
+<span class="kw">def</span> point[B, A](a: A) = <span class="fu">createNewFold</span>(())((x, y) =&gt; (), Function.<span class="fu">const</span>(a))
+
+<span class="kw">def</span> composeWith[A, B, C, D](f: (A, C) =&gt; D)(fold1: Fold[B, A], fold2: Foldl[B, C]): Foldl[B, D] = {
+  fold2 &lt;*&gt; fold1.<span class="fu">map</span>(f.<span class="fu">curried</span>)
+ }
+}</code></pre></div>
+</section>
+<section id="example-applicative-composition" class="slide level2">
+<h3>Example: Applicative Composition</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">postprocess                 initial   folding function
+|                             |            |
+<span class="fu">divide</span>(<span class="fu">foldl</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), (<span class="dv">0</span>, <span class="dv">0</span>)){(x, y) =&gt; x <span class="kw">match</span> {
+  <span class="kw">case</span> (summ, lengthh) =&gt; (summ + y, lengthh + <span class="dv">1</span>)
+}})</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+<span class="kw">val</span> sum = <span class="fu">create</span>(<span class="dv">0</span>)(_ + _)
+
+<span class="kw">val</span> length = <span class="fu">create</span>(<span class="dv">0</span>)(x =&gt; x + <span class="dv">1</span>)
+
+<span class="kw">val</span> meanFold = <span class="fu">composeWith</span>(divide)(sum, length)
+
+<span class="kw">val</span> mean = meanFold.<span class="fu">of</span>(List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>))</code></pre></div>
+<p><em>I claim that second code block is much elegant than first one, both traverses list only once</em></p>
+</section>
+<section id="what-if-i-told-you-that-its-already-implemented-in-a-library" class="slide level2">
+<h3>What if I told you that it's already implemented in a library :)</h3>
+<ul>
+<li class="fragment">All this (and much more) you can find in my WIP library</li>
+<li class="fragment">Home: https://www.github.com/amarpotghan/scala-fold</li>
+<li class="fragment">It's not published yet although it's already usable.</li>
+<li class="fragment">There are plenty of things to do including writing proper documentation, supporting monadic folds etc.</li>
+<li class="fragment"><em>The Foldl encoding in the library is a bit different from what we saw here, but idea is same</em></li>
+</ul>
+</section>
+<section id="using-composable-scala-folds-convenient-foldwith" class="slide level2">
+<h3>Using composable-scala-folds: Convenient foldWith</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+scala&gt; <span class="kw">import</span> fold.<span class="fu">_</span>
+<span class="kw">import</span> fold.<span class="fu">_</span>
+
+scala&gt; <span class="kw">import</span> Fold.<span class="fu">_</span>
+<span class="kw">import</span> Fold.<span class="fu">_</span>
+
+scala&gt; Seq(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>).<span class="fu">foldWith</span>(sum[Int])
+res1: Int = <span class="dv">6</span></code></pre></div>
+<p><em>Library has provided an extension method for standard library collections, so that we can say:</em></p>
+</section>
+<section id="composable-scala-folds-compose-using-applicative-syntax" class="slide level2">
+<h3>composable-scala-folds: Compose using applicative syntax</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+scala&gt; <span class="kw">import</span> fold.<span class="fu">_</span>
+scala&gt; <span class="kw">import</span> Fold.<span class="fu">_</span>
+
+scala&gt;  <span class="kw">import</span> scalaz.<span class="fu">syntax</span>.<span class="fu">apply</span>.<span class="fu">_</span>
+<span class="kw">import</span> scalaz.<span class="fu">syntax</span>.<span class="fu">apply</span>.<span class="fu">_</span>
+
+scala&gt; <span class="kw">def</span> mean = (sum[Double] |@| length[Double, Double]) (_ / _)
+mean: fold.<span class="fu">Foldl</span>[Double,Double]
+
+scala&gt; Seq(<span class="fl">1.0</span>, <span class="fl">2.0</span>, <span class="fl">3.0</span>).<span class="fu">foldWith</span>(mean)
+res3: Double = <span class="fl">2.0</span></code></pre></div>
+<p><em>Library comes with instances for scalaz's Functor and Applicative type classes hence you can use applicative builder syntax of scalaz</em></p>
+</section>
+<section id="composable-scala-folds-compose-using-scalaz-applicative-syntax" class="slide level2">
+<h3>composable-scala-folds: Compose using scalaz applicative syntax</h3>
+<p><em>Of course, it's not only limited to two folds. You can compose any number of folds</em></p>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">scala&gt; <span class="kw">def</span> <span class="fu">standardDeviation</span>(sos: Double, s: Double, l: Double) = Math.<span class="fu">sqrt</span>(sos / (l - Math.<span class="fu">pow</span>(s / l, <span class="dv">2</span>)))
+standardDeviation: (sos: Double, s: Double, l: Double)Double
+
+scala&gt; <span class="kw">val</span> sumOfSuares = <span class="fu">createWith</span>(0d)((acc: Double, x: Double) =&gt; Math.<span class="fu">pow</span>(x, <span class="dv">2</span>) + acc)
+sumOfSuares: fold.<span class="fu">Foldl</span>[Double,Double] = fold.<span class="fu">Foldl</span>@5159adcf
+
+scala&gt; <span class="kw">val</span> stdDevFold = (sumOfSuares |@| sum[Double] |@| length[Double, Double])(standardDeviation)
+stdDevFold: fold.<span class="fu">Foldl</span>[Double,Double] = fold.<span class="fu">Foldl</span>@6a4aaaa8</code></pre></div>
+</section>
+<section id="composable-scala-folds-compose-conveniently-using-numeric-operations" class="slide level2">
+<h3>composable-scala-folds: Compose conveniently using numeric operations</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+scala&gt; <span class="kw">import</span> fold.<span class="fu">_</span>
+<span class="kw">import</span> fold.<span class="fu">_</span>
+
+scala&gt; <span class="kw">import</span> Fold.<span class="fu">_</span>
+<span class="kw">import</span> Fold.<span class="fu">_</span>
+
+scala&gt; <span class="kw">def</span> mean = sum[Double] / length[Double, Double]
+mean: fold.<span class="fu">Foldl</span>[Double,Double]
+
+scala&gt; Seq(<span class="fl">1.0</span>, <span class="fl">2.0</span>, <span class="fl">3.0</span>).<span class="fu">foldWith</span>(mean)
+res2: Double = <span class="fl">2.0</span></code></pre></div>
+<p><em>You can also conveniently use numeric operations on Foldl type</em></p>
+</section>
+<section id="composable-scala-folds-compose-using-foldl-monoid" class="slide level2">
+<h3>composable-scala-folds: Compose using Foldl monoid</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+scala&gt; <span class="kw">val</span> lengthWithCaption = length[Int, Int].<span class="fu">map</span>(<span class="st">&quot;Length of given list is:&quot;</span> ++ _.<span class="fu">toString</span>)
+lengthWithCaption: fold.<span class="fu">Foldl</span>[Int,String] = fold.<span class="fu">Foldl</span>@6f650f8c
+
+scala&gt; <span class="kw">val</span> sumWithCaption = sum[Int].<span class="fu">map</span>(<span class="st">&quot;Sum of given list is: &quot;</span> ++ _.<span class="fu">toString</span>)
+sumWithCaption: fold.<span class="fu">Foldl</span>[Int,String] = fold.<span class="fu">Foldl</span>@280dc546
+
+scala&gt; <span class="kw">import</span> scalaz.<span class="fu">_</span>
+<span class="kw">import</span> scalaz.<span class="fu">_</span>
+
+scala&gt; <span class="kw">import</span> std.<span class="fu">string</span>.<span class="fu">_</span>
+<span class="kw">import</span> std.<span class="fu">string</span>.<span class="fu">_</span>
+
+scala&gt; <span class="kw">val</span> sumAndLengthWithCaption = Monoid[Foldl[Int, String]].<span class="fu">append</span>(sumWithCaption, lengthWithCaption)
+sumAndLengthWithCaption: fold.<span class="fu">Foldl</span>[Int,String] = fold.<span class="fu">Foldl</span>@de169af
+
+scala&gt; List(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>).<span class="fu">foldWith</span>(sumAndLengthWithCaption)
+res0: String = Sum of given list is: 6Length of given list is:<span class="dv">3</span></code></pre></div>
+<p><em>We can also compose folds using Monoid instance, given that result type of folds is a monoid</em></p>
+</section>
+<section id="composable-scala-folds-foldl-type-is-profunctor" class="slide level2">
+<h3>composable-scala-folds: Foldl type is Profunctor</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+scala&gt; sum[Int].<span class="fu">dimap</span>((x:String) =&gt; x.<span class="fu">length</span>, y =&gt; <span class="st">&quot;Number of characters are: &quot;</span> ++ y.<span class="fu">toString</span>)
+res10: fold.<span class="fu">Foldl</span>[String,String] = fold.<span class="fu">Foldl</span>@2c7527f4
+
+scala&gt; <span class="kw">val</span> characterLength = sum[Int].<span class="fu">dimap</span>((x:String) =&gt; x.<span class="fu">length</span>, y =&gt; <span class="st">&quot;Number of characters are: &quot;</span> ++ y.<span class="fu">toString</span>)
+characterLength: fold.<span class="fu">Foldl</span>[String,String] = fold.<span class="fu">Foldl</span>@5ef0a157
+
+scala&gt; List(<span class="st">&quot;Folds&quot;</span>, <span class="st">&quot;are&quot;</span>, <span class="st">&quot;awesome&quot;</span>).<span class="fu">foldWith</span>(characterLength)
+res11: String = Number of characters are: <span class="dv">15</span></code></pre></div>
+<p><em>We reused the sum fold on List[String], yay!. <code>dimap</code>s first function changes the input type and second function changes the result type.</em></p>
+</section>
+<section id="batteries-included-in-the-library" class="slide level2">
+<h3>Batteries included in the library</h3>
+<ul>
+<li class="fragment">length</li>
+<li class="fragment">sum</li>
+<li class="fragment">product</li>
+<li class="fragment">isEmpty</li>
+<li class="fragment">head</li>
+<li class="fragment">any</li>
+<li class="fragment">all</li>
+<li class="fragment">forall</li>
+<li class="fragment">forany</li>
+<li class="fragment">and</li>
+<li class="fragment">or</li>
+</ul>
+</section>
+<section id="batteries-included-in-the-library-1" class="slide level2">
+<h3>Batteries included in the library</h3>
+<ul>
+<li class="fragment">take</li>
+<li class="fragment">drop</li>
+<li class="fragment">takeWhile</li>
+<li class="fragment">dropWhile</li>
+<li class="fragment">dedup</li>
+</ul>
+</section>
+<section id="batteries-included-in-the-library-2" class="slide level2">
+<h3>Batteries included in the library</h3>
+<ul>
+<li class="fragment">maximum</li>
+<li class="fragment">maximumBy</li>
+<li class="fragment">minimum</li>
+<li class="fragment">minimumBy</li>
+<li class="fragment">last</li>
+<li class="fragment">lastOrElse</li>
+<li class="fragment">contains</li>
+<li class="fragment">doesNotContain</li>
+<li class="fragment">reverse</li>
+</ul>
+</section>
+<section id="batteries-included-in-the-library-3" class="slide level2">
+<h3>Batteries included in the library</h3>
+<ul>
+<li class="fragment">foldMap</li>
+<li class="fragment">mconcat</li>
+<li class="fragment">withMonoid</li>
+</ul>
+</section>
+<section id="using-composable-scala-folds-implement-a-fold" class="slide level2">
+<h3>Using composable-scala-folds: Implement a fold</h3>
+<p>using createWith smart constructor:</p>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
+  <span class="kw">def</span> all[A](p: A =&gt; Boolean): Foldl[A, Boolean] =
+    <span class="fu">createWith</span>(<span class="kw">true</span>)((acc: Boolean, e: A) =&gt; acc &amp;&amp; <span class="fu">p</span>(e))
+
+  <span class="kw">def</span> any[A](p: A =&gt; Boolean): Foldl[A, Boolean] =
+    <span class="fu">createWith</span>(<span class="kw">false</span>)((acc: Boolean, e: A) =&gt; acc || <span class="fu">p</span>(e))</code></pre></div>
+</section>
+<section id="using-composable-scala-folds-reuse-all-this-for-your-own-foldable-type" class="slide level2">
+<h3>Using composable-scala-folds: Reuse all this for your own foldable type</h3>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala"><span class="kw">trait</span> CanFold[F[_], B] {
+  <span class="kw">def</span> fold[A](fa: F[B])(fo: Foldl[B, A]): A
+}</code></pre></div>
+<p><em>You can reuse all this to your own foldable type by providing an instance to <code>CanFold</code> type class.</em></p>
+</section>
+<section id="credits" class="slide level2">
+<h3>Credits</h3>
+<ul>
+<li class="fragment"><a href="https://github.com/Gabriel439">Gabriel Gonzalez</a>'s <a href="https://hackage.haskell.org/package/foldl">foldl library</a></li>
+<li class="fragment">Phil Freeman's <a href="https://github.com/paf31/purescript-folds">purescript-folds</a></li>
+<li class="fragment">Max Rabkin’s <a href="http://squing.blogspot.sg/2008/11/beautiful-folding.html">Beautiful folding</a></li>
+<li class="fragment">Conal Elliott's <a href="http://conal.net/blog/posts/another-lovely-example-of-type-class-morphisms">blogpost</a></li>
+</ul>
+</section>
+<section id="origami-library" class="slide level2">
+<h3>Origami library</h3>
+<ul>
+<li class="fragment">Scala already has a library that is a superset of my library</li>
+<li class="fragment">A feature rich, well documentated monadic folds library, much more matured.</li>
+<li class="fragment">I did not know about it when I started working on composable-scala-folds</li>
+<li class="fragment">Encoding of Foldl is different than my library. I used purescript-folds inspired encoding.</li>
+</ul>
+</section>
+<section id="conclusion" class="slide level2">
+<h3>Conclusion</h3>
+<figure>
+<img src="img/composable-folds.jpg" />
+</figure>
+</section>
+    </div>
+  </div>
+  <script src="reveal.js/lib/js/head.min.js"></script>
+  <script src="reveal.js/js/reveal.js"></script>
+  <script>
+      // Full list of configuration options available here:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        theme: 'beige', // available themes are in /css/theme
+        transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+        // Optional libraries used to extend on reveal.js
+        dependencies: [
+          { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: 'reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+//          { src: 'reveal.js/plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; }, }
+//          { src: 'reveal.js/plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+]});
+    </script>
+    </body>
+</html>
