@@ -301,7 +301,7 @@ res0: String = Sum of the given list is: <span class="dv">6</span></code></pre><
 <div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala">
 <span class="kw">val</span> sum = <span class="fu">create</span>(<span class="dv">0</span>)(_ + _)
 
-<span class="kw">val</span> length = <span class="fu">create</span>(<span class="dv">0</span>)(x =&gt; x + <span class="dv">1</span>)
+<span class="kw">val</span> length = <span class="fu">create</span>(<span class="dv">0</span>)((acc, _) =&gt; acc + <span class="dv">1</span>)
 
 <span class="kw">val</span> meanFold = <span class="fu">composeWith</span>(divide)(sum, length)
 
